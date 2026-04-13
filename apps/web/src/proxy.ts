@@ -30,6 +30,40 @@ const getSetupError = (): SetupErrorCode | null => {
 
 export const proxy = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
+
+  // ── API routes: CORS + security headers ─────────────────────────────
+  if (pathname.startsWith("/api/")) {
+    const response = NextResponse.next();
+
+    // CORS
+    const origin = request.headers.get("origin");
+    if (origin) {
+      response.headers.set("Access-Control-Allow-Origin", origin);
+      response.headers.set("Vary", "Origin");
+    }
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PATCH, DELETE, OPTIONS",
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Authorization, Content-Type",
+    );
+    response.headers.set("Access-Control-Max-Age", "86400");
+
+    // Security headers
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.headers.set(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()",
+    );
+
+    return response;
+  }
+
+  // ── Page routes: setup error redirect ────────────────────────────────
   const error = getSetupError();
 
   if (pathname.startsWith("/setup-error")) {
@@ -50,7 +84,9 @@ export const proxy = (request: NextRequest) => {
 
 export const config = {
   matcher: [
-    // Match all routes except static files, _next, and api routes
-    "/((?!_next/static|_next/image|favicon.ico|api|.*\\.).*)",
+    // API routes
+    "/api/:path*",
+    // Page routes (except static files and _next)
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.).*)",
   ],
 };

@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { loadCaCertificate } from "@/lib/gateway-ca";
+import { resolveApiAuth } from "@/lib/api-auth";
+import { unauthorized } from "@/lib/api-utils";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await resolveApiAuth(request);
+  if (!auth) return unauthorized();
+
   const pem = loadCaCertificate();
 
   if (!pem) {
