@@ -13,39 +13,39 @@ Comprehensive security review of the OneCLI web application. The codebase demons
 
 ### What's Done Well
 
-| Area | Implementation |
-|------|---------------|
-| **Encryption** | AES-256-GCM with proper IV, auth tag, and key validation |
-| **Input Validation** | Zod schemas on every API and server action endpoint |
-| **Auth Scoping** | Every query filters by `accountId` — no horizontal privilege escalation |
-| **CSRF (OAuth)** | HMAC-SHA256 signed state with timing-safe comparison |
-| **Audit Logging** | Comprehensive audit trail on all state-changing operations |
-| **Secret Handling** | Plaintext secrets are never returned in API responses; preview is masked |
-| **No SQL Injection** | Uses Prisma parameterized queries exclusively; no raw SQL |
-| **No XSS Vectors** | No `dangerouslySetInnerHTML`, no `innerHTML`, no `eval()` |
-| **Separation of Concerns** | Clean service/action/API layering with auth checks at every boundary |
-| **Error Handling** | Internal errors caught and return generic 500; no stack traces leaked |
+| Area                       | Implementation                                                           |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **Encryption**             | AES-256-GCM with proper IV, auth tag, and key validation                 |
+| **Input Validation**       | Zod schemas on every API and server action endpoint                      |
+| **Auth Scoping**           | Every query filters by `accountId` — no horizontal privilege escalation  |
+| **CSRF (OAuth)**           | HMAC-SHA256 signed state with timing-safe comparison                     |
+| **Audit Logging**          | Comprehensive audit trail on all state-changing operations               |
+| **Secret Handling**        | Plaintext secrets are never returned in API responses; preview is masked |
+| **No SQL Injection**       | Uses Prisma parameterized queries exclusively; no raw SQL                |
+| **No XSS Vectors**         | No `dangerouslySetInnerHTML`, no `innerHTML`, no `eval()`                |
+| **Separation of Concerns** | Clean service/action/API layering with auth checks at every boundary     |
+| **Error Handling**         | Internal errors caught and return generic 500; no stack traces leaked    |
 
 ### Findings Summary
 
-| # | Severity | Title | Upstream Status |
-|---|----------|-------|-----------------|
-| 001 | 🔴 HIGH | API Keys Stored in Plaintext | Never discussed |
-| 002 | 🔴 HIGH | Agent Access Tokens Stored in Plaintext | Never discussed |
-| 003 | 🔴 HIGH | No CORS on Web App API Routes | Partially addressed (gateway only — PR #52) |
-| 004 | 🔴 HIGH | Missing Security Headers | Never discussed |
-| 005 | 🟠 MEDIUM | No Rate Limiting on Auth/API Routes | Never discussed |
-| 006 | 🟠 MEDIUM | Weak NextAuth Fallback Secret | Partially fixed upstream (PR #173) — see note |
-| 007 | 🟠 MEDIUM | Unauthenticated CA Certificate Endpoint | Never discussed |
-| 008 | 🟠 MEDIUM | Unauthenticated Health Endpoint | Never discussed |
-| 009 | 🟠 MEDIUM | OAuth Nonce Replay | Never discussed (HMAC CSRF in PR #127, replay not addressed) |
-| 010 | 🟠 MEDIUM | Legacy `ConnectedService` Plaintext Tokens | Partially addressed (PR #146 encrypts VaultConnection only) |
-| 011 | 🟠 MEDIUM | No UUID Validation on Route Parameters | Never discussed |
-| 012 | 🟡 LOW | Demo Secret Value Hardcoded | Never discussed |
-| 013 | 🟡 LOW | `force-dynamic` Disables Static Rendering | Never discussed |
-| 014 | 🟡 LOW | Error Messages Could Leak Implementation Details | Never discussed |
-| 015 | 🟡 LOW | `localUserEnsured` Flag Not Process-Safe | Never discussed |
-| 016 | 🟡 LOW | No IP Address in Audit Logs | Adjacent discussion (Issue #54, PR #103 — no IP) |
+| #   | Severity  | Title                                            | Upstream Status                                              |
+| --- | --------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| 001 | 🔴 HIGH   | API Keys Stored in Plaintext                     | Never discussed                                              |
+| 002 | 🔴 HIGH   | Agent Access Tokens Stored in Plaintext          | Never discussed                                              |
+| 003 | 🔴 HIGH   | No CORS on Web App API Routes                    | Partially addressed (gateway only — PR #52)                  |
+| 004 | 🔴 HIGH   | Missing Security Headers                         | Never discussed                                              |
+| 005 | 🟠 MEDIUM | No Rate Limiting on Auth/API Routes              | Never discussed                                              |
+| 006 | 🟠 MEDIUM | Weak NextAuth Fallback Secret                    | Partially fixed upstream (PR #173) — see note                |
+| 007 | 🟠 MEDIUM | Unauthenticated CA Certificate Endpoint          | Never discussed                                              |
+| 008 | 🟠 MEDIUM | Unauthenticated Health Endpoint                  | Never discussed                                              |
+| 009 | 🟠 MEDIUM | OAuth Nonce Replay                               | Never discussed (HMAC CSRF in PR #127, replay not addressed) |
+| 010 | 🟠 MEDIUM | Legacy `ConnectedService` Plaintext Tokens       | Partially addressed (PR #146 encrypts VaultConnection only)  |
+| 011 | 🟠 MEDIUM | No UUID Validation on Route Parameters           | Never discussed                                              |
+| 012 | 🟡 LOW    | Demo Secret Value Hardcoded                      | Never discussed                                              |
+| 013 | 🟡 LOW    | `force-dynamic` Disables Static Rendering        | Never discussed                                              |
+| 014 | 🟡 LOW    | Error Messages Could Leak Implementation Details | Never discussed                                              |
+| 015 | 🟡 LOW    | `localUserEnsured` Flag Not Process-Safe         | Never discussed                                              |
+| 016 | 🟡 LOW    | No IP Address in Audit Logs                      | Adjacent discussion (Issue #54, PR #103 — no IP)             |
 
 ### Recommended Remediation Order
 
@@ -111,9 +111,18 @@ There is zero CORS configuration on any Next.js API route. This means any websit
 // middleware.ts
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  response.headers.set("Access-Control-Allow-Origin", "https://your-app-domain.com");
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  response.headers.set(
+    "Access-Control-Allow-Origin",
+    "https://your-app-domain.com",
+  );
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS",
+  );
+  response.headers.set(
+    "Access-Control-Allow-Headers",
+    "Authorization, Content-Type",
+  );
   response.headers.set("Access-Control-Allow-Credentials", "true");
   return response;
 }
@@ -139,17 +148,29 @@ No security headers are set anywhere. The app is vulnerable to:
 **Recommendation:** Add headers in `next.config.js`:
 
 ```js
-headers: async () => [{
-  source: '/(.*)',
-  headers: [
-    { key: 'X-Frame-Options', value: 'DENY' },
-    { key: 'X-Content-Type-Options', value: 'nosniff' },
-    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-    { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-    { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'" },
-  ]
-}]
+headers: async () => [
+  {
+    source: "/(.*)",
+    headers: [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=()",
+      },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      {
+        key: "Content-Security-Policy",
+        value:
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+      },
+    ],
+  },
+];
 ```
 
 Note: CSP will need careful tuning since the app uses Next.js (inline scripts/styles), Tailwind, Google Fonts, and potentially third-party assets.
@@ -264,7 +285,8 @@ Dynamic route params are passed directly to service functions without validating
 **Recommendation:** Add UUID validation in route handlers:
 
 ```typescript
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const { agentId } = await params;
 if (!UUID_REGEX.test(agentId)) {
   return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
@@ -330,6 +352,7 @@ Audit logs capture `userId`, `accountId`, `action`, `service`, and `metadata` �
 **Recommendation:** Add an optional `ipAddress` field to `AuditEventParams` and the `audit_logs` table. Extract from `x-forwarded-for` or `x-real-ip` headers in the API route layer.
 
 ```typescript
-const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-  ?? request.headers.get("x-real-ip");
+const ip =
+  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+  request.headers.get("x-real-ip");
 ```
