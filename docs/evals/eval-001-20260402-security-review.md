@@ -1,6 +1,7 @@
 # Eval 001 — OneCLI Web App Security Review
 
 **Date:** 2026-04-02
+**Last updated:** 2026-04-13
 **Scope:** `apps/web/`, `packages/db/`, `docker/`
 **Reviewer:** Security audit (whitehat)
 
@@ -34,7 +35,7 @@ Comprehensive security review of the OneCLI web application. The codebase demons
 | 003 | 🔴 HIGH | No CORS on Web App API Routes | Partially addressed (gateway only — PR #52) |
 | 004 | 🔴 HIGH | Missing Security Headers | Never discussed |
 | 005 | 🟠 MEDIUM | No Rate Limiting on Auth/API Routes | Never discussed |
-| 006 | 🟠 MEDIUM | Weak NextAuth Fallback Secret | Never discussed |
+| 006 | 🟠 MEDIUM | Weak NextAuth Fallback Secret | Partially fixed upstream (PR #173) — see note |
 | 007 | 🟠 MEDIUM | Unauthenticated CA Certificate Endpoint | Never discussed |
 | 008 | 🟠 MEDIUM | Unauthenticated Health Endpoint | Never discussed |
 | 009 | 🟠 MEDIUM | OAuth Nonce Replay | Never discussed (HMAC CSRF in PR #127, replay not addressed) |
@@ -184,9 +185,9 @@ secret: process.env.NEXTAUTH_SECRET || "local-mode-fallback-unused",
 
 If someone deploys with `NEXTAUTH_SECRET` unset and Google OAuth accidentally configured, the JWT secret becomes the hardcoded string `"local-mode-fallback-unused"` — publicly visible in source code. An attacker could forge JWTs and impersonate any user.
 
-**Upstream:** Never discussed.
+**Upstream:** Partially fixed in PR [#173](https://github.com/onecli/onecli/pull/173). The hardcoded fallback string `"local-mode-fallback-unused"` was replaced with `""` (empty string). This removes the known-static-key risk, but an empty secret means NextAuth signs JWTs with `HMAC-SHA256("")` — deterministic and effectively public. The setup error page catches misconfiguration (secret set without Google creds), but if someone later sets `GOOGLE_CLIENT_ID` without `NEXTAUTH_SECRET`, JWTs would be signed with an empty key.
 
-**Recommendation:** Either throw an error when `GOOGLE_CLIENT_ID` is set but `NEXTAUTH_SECRET` isn't, or auto-generate a random secret at container startup (same pattern as `SECRET_ENCRYPTION_KEY` in `docker/entrypoint.sh`).
+**Recommendation:** Hard-fail when `GOOGLE_CLIENT_ID` is set but `NEXTAUTH_SECRET` is empty. Or auto-generate a random secret at container startup (same pattern as `SECRET_ENCRYPTION_KEY` in `docker/entrypoint.sh`).
 
 ---
 
