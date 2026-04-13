@@ -11,7 +11,8 @@
       "@/*": ["./src/*"],
       "@dashboard/*": ["./src/app/(dashboard)/_components/*"],
       "@onecli/ui/*": ["../../packages/ui/src/*"]
-    }
+    },
+    "types": ["vitest/globals"]
   },
   "include": [
     "**/*.ts",
