@@ -7,7 +7,10 @@ import {
   SECRET_ENCRYPTION_KEY,
 } from "@/lib/env";
 
-type SetupErrorCode = "oauth-misconfigured" | "missing-encryption-key";
+type SetupErrorCode =
+  | "oauth-misconfigured"
+  | "missing-encryption-key"
+  | "missing-nextauth-secret";
 
 /**
  * Returns the first configuration error found, or null if setup is valid.
@@ -18,6 +21,11 @@ const getSetupError = (): SetupErrorCode | null => {
   // NEXTAUTH_SECRET is set but Google OAuth creds are missing
   if (NEXTAUTH_SECRET && !GOOGLE_CLIENT_ID) {
     return "oauth-misconfigured";
+  }
+
+  // Google OAuth is configured but NEXTAUTH_SECRET is missing
+  if (GOOGLE_CLIENT_ID && !NEXTAUTH_SECRET) {
+    return "missing-nextauth-secret";
   }
 
   // SECRET_ENCRYPTION_KEY is required for encrypting secrets

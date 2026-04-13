@@ -17,6 +17,25 @@ const errors: Record<string, { title: string; description: React.ReactNode }> =
         </p>
       ),
     },
+    "missing-nextauth-secret": {
+      title: "NextAuth secret not configured",
+      description: (
+        <div className="space-y-3">
+          <p>
+            <Code>GOOGLE_CLIENT_ID</Code> is set but{" "}
+            <Code>NEXTAUTH_SECRET</Code> is missing. OAuth sign-in requires a
+            secret to sign JWTs. Generate one and add it to your environment:
+          </p>
+          <pre className="bg-muted overflow-x-auto rounded-lg px-3 py-2 text-xs">
+            {`openssl rand -hex 32`}
+          </pre>
+          <p className="text-xs">
+            Then set <Code>NEXTAUTH_SECRET</Code> to the generated value and
+            restart.
+          </p>
+        </div>
+      ),
+    },
     "missing-encryption-key": {
       title: "Encryption key not configured",
       description: isDev ? (
